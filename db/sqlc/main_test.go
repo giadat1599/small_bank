@@ -9,6 +9,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Use local postgres to run tests
 const (
 	dbDriver = "postgres"
 	dbSource = "postgres://root:secret@localhost:5432/small_bank?sslmode=disable"

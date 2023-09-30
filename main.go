@@ -6,17 +6,16 @@ import (
 
 	"github.com/giadat1599/small_bank/api"
 	db "github.com/giadat1599/small_bank/db/sqlc"
+	"github.com/giadat1599/small_bank/utils"
 	_ "github.com/lib/pq"
 )
 
-const (
-	dbDriver   = "postgres"
-	dbSource   = "postgres://root:secret@localhost:5432/small_bank?sslmode=disable"
-	serverAddr = "0.0.0.0:8080"
-)
-
 func main() {
-	connection, err := sql.Open(dbDriver, dbSource)
+	config, err := utils.LoadConfig(".")
+	if err != nil {
+		log.Fatal("Cannot load configuration")
+	}
+	connection, err := sql.Open(config.DBDriver, config.DBSource)
 
 	if err != nil {
 		log.Fatal("Cannot connect to database: ", err)
@@ -26,7 +25,7 @@ func main() {
 
 	server := api.NewServer(store)
 
-	err = server.StartServer(serverAddr)
+	err = server.StartServer(config.ServerAddr)
 
 	if err != nil {
 		log.Fatal("Cannot start the server: ", err)
