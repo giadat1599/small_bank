@@ -40,11 +40,3 @@ jobs:
         run: make migrateup
       - name: run tests
         run: make test
-      - name: generate coverage report
-        uses: ncruces/go-coverage-report@v0
-        with:
-          report: "true"
-          chart: "true"
-          amend: "true"
-          reuse-go: "true"
-        continue-on-error: true
