@@ -129,7 +129,7 @@ func TestCreateAccount(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		body          map[string]any
+		body          gin.H
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}{
