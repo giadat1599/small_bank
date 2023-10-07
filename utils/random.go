@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const alphabet = "abcdefghijklmnopqrstuvwxyz."
+const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 // RandomInt generates a radom integer between min and max
 func RandomInt(min, max int64) int64 {

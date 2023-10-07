@@ -65,7 +65,7 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 	require.Empty(t, gotUser.HashedPassword)
 }
 
-func TestCreateUser(t *testing.T) {
+func TestCreateUserAPI(t *testing.T) {
 	user, password := randomUser(t)
 	testCases := []struct {
 		name          string
