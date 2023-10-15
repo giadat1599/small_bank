@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: small-bank-api-deployment
+  labels:
+    app: small-bank-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: small-bank-api
+  template:
+    metadata:
+      labels:
+        app: small-bank-api
+    spec:
+      containers:
+        - name: small-bank-api
+          image: 760038101556.dkr.ecr.ap-northeast-1.amazonaws.com/smallbank:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
