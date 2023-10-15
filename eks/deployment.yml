@@ -17,5 +17,6 @@ spec:
       containers:
         - name: small-bank-api
           image: 760038101556.dkr.ecr.ap-northeast-1.amazonaws.com/smallbank:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
