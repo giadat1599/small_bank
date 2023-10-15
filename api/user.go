@@ -116,7 +116,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, loginUserResponse{
-		Status:      "OK",
+		Status:      "OK123",
 		AccessToken: acessToken,
 		User:        newUserResponse(user),
 	})
