@@ -11,12 +11,12 @@ jobs:
     steps:
       - name: checkout repo
         uses: actions/checkout@v3
-      
+
       - name: install kubectl
-        - uses: azure/setup-kubectl@v3
-          with:
-            version: 'v1.28.2' 
-          id: install
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.2"
+        id: install
 
       - name: configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -38,8 +38,11 @@ jobs:
           REPOSITORY: smallbank
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t latest .
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG -t $REGISTRY/$REPOSITORY:$IMAGE_TAG:latest .
           docker push -a $REGISTRY/$REPOSITORY
+
+      - name: update kube config
+        run: aws eks update-kubeconfig --name small-bank --region ap-northeast-1
 
       - name: deploy image to amazon eks
         run: |
