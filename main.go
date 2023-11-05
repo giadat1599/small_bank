@@ -12,6 +12,9 @@ import (
 	"github.com/giadat1599/small_bank/gapi"
 	"github.com/giadat1599/small_bank/pb"
 	"github.com/giadat1599/small_bank/utils"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/lib/pq"
 	"github.com/rakyll/statik/fs"
@@ -31,6 +34,8 @@ func main() {
 		log.Fatal("Cannot connect to database: ", err)
 	}
 
+	runDBMirgation(config.MigrationURL, config.DBSource)
+
 	store := db.NewStore(connection)
 	// We need to run the gateway or gRPC server in a separate go routine than the main routine to avoid blocking each other
 	go runGatewayServer(config, store)
@@ -38,7 +43,18 @@ func main() {
 
 }
 
+func runDBMirgation(migrationURL string, dbSource string) {
+	m, err := migrate.New(migrationURL, dbSource)
+	if err != nil {
+		log.Fatal("cannot create new migrate instance: ", err)
+	}
 
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal("failed to run migrate up: ", err)
+	}
+
+	log.Println("db migrated succesfully")
+}
 
 func runGatewayServer(config utils.Config, store db.Store) {
 	server, err := gapi.NewServer(config, store)
