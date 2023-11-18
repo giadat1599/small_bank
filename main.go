@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/giadat1599/small_bank/gapi"
 	"github.com/giadat1599/small_bank/pb"
 	"github.com/giadat1599/small_bank/utils"
+	"github.com/giadat1599/small_bank/worker"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -27,7 +29,7 @@ import (
 )
 
 func main() {
-	
+
 	config, err := utils.LoadConfig(".")
 	if err != nil {
 		log.Fatal().Msg("Cannot load configuration")
@@ -44,9 +46,16 @@ func main() {
 	runDBMirgation(config.MigrationURL, config.DBSource)
 
 	store := db.NewStore(connection)
-	// We need to run the gateway or gRPC server in a separate go routine than the main routine to avoid blocking each other
-	go runGatewayServer(config, store)
-	runGRPCServer(config, store)
+
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddr,
+	}
+
+	taskDistributor := worker.NewRedisDistributor(redisOpt)
+
+	go runTaskProcessor(redisOpt, store)
+	go runGatewayServer(config, store, taskDistributor)
+	runGRPCServer(config, store, taskDistributor)
 
 }
 
@@ -63,12 +72,22 @@ func runDBMirgation(migrationURL string, dbSource string) {
 	log.Info().Msg("db migrated succesfully")
 }
 
-func runGatewayServer(config utils.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+	log.Info().Msg("start task processor")
+	err := taskProcessor.Start()
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
+}
+
+func runGatewayServer(config utils.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Msg("Cannot create the server")
 	}
-	
+
 	// use the exact names which are defined in the proto files for http requests/responses
 	jsonOptions := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 		MarshalOptions: protojson.MarshalOptions{
@@ -78,7 +97,7 @@ func runGatewayServer(config utils.Config, store db.Store) {
 			DiscardUnknown: true,
 		},
 	})
-	
+
 	grpcMux := runtime.NewServeMux(jsonOptions)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -98,7 +117,7 @@ func runGatewayServer(config utils.Config, store db.Store) {
 		log.Fatal().Msg("cannot create statik fs")
 	}
 
-	swaggerHandler :=  http.StripPrefix("/swagger/", http.FileServer(statikFS))
+	swaggerHandler := http.StripPrefix("/swagger/", http.FileServer(statikFS))
 	mux.Handle("/swagger/", swaggerHandler)
 
 	listener, err := net.Listen("tcp", config.HTTPServerAddr)
@@ -109,15 +128,15 @@ func runGatewayServer(config utils.Config, store db.Store) {
 
 	log.Info().Msgf("start HTTP server at %s", listener.Addr().String())
 	handler := gapi.HttpLogger(mux)
-	err = http.Serve(listener,handler)
+	err = http.Serve(listener, handler)
 	if err != nil {
 		log.Fatal().Msg("cannot start the grpc server")
 	}
 }
 
 /* Serving gRPC */
-func runGRPCServer(config utils.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runGRPCServer(config utils.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Msg("Cannot create the server")
 	}
