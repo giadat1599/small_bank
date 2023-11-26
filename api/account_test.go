@@ -49,8 +49,8 @@ func requireBodyMatchAccounts(t *testing.T, body *bytes.Buffer, accounts []db.Ac
 }
 
 func TestGetAccountAPI(t *testing.T) {
-	user, _ := randomUser(t)
-	account := randomAccount(user.Username)
+	user, _ := RandomUser(t)
+	account := RandomAccount(user.Username)
 
 	testCases := []struct {
 		name          string
@@ -167,8 +167,8 @@ func TestGetAccountAPI(t *testing.T) {
 }
 
 func TestCreateAccountAPI(t *testing.T) {
-	user, _ := randomUser(t)
-	account := randomAccount(user.Username)
+	user, _ := RandomUser(t)
+	account := RandomAccount(user.Username)
 
 	testCases := []struct {
 		name          string
@@ -269,12 +269,12 @@ func TestListAccountsAPI(t *testing.T) {
 		Page     int32
 		PageSize int32
 	}
-	user, _ := randomUser(t)
+	user, _ := RandomUser(t)
 	size := 5
 	accounts := make([]db.Account, size)
 
 	for i := range accounts {
-		accounts[i] = randomAccount(user.Username)
+		accounts[i] = RandomAccount(user.Username)
 	}
 
 	testCases := []struct {

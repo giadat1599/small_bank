@@ -19,11 +19,11 @@ import (
 )
 
 func TestTransferAPI(t *testing.T) {
-	user1, _ := randomUser(t)
-	user2, _ := randomUser(t)
+	user1, _ := RandomUser(t)
+	user2, _ := RandomUser(t)
 
-	account1 := randomAccount(user1.Username)
-	account2 := randomAccount(user2.Username)
+	account1 := RandomAccount(user1.Username)
+	account2 := RandomAccount(user2.Username)
 
 	account1.Currency = utils.USD
 	account2.Currency = utils.USD
