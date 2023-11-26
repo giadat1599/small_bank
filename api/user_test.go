@@ -66,7 +66,7 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 }
 
 func TestCreateUserAPI(t *testing.T) {
-	user, password := randomUser(t)
+	user, password := RandomUser(t)
 	testCases := []struct {
 		name          string
 		body          gin.H

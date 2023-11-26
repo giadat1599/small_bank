@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func randomAccount(owner string) db.Account {
+func RandomAccount(owner string) db.Account {
 	return db.Account{
 		ID:       utils.RandomInt(0, 1000),
 		Owner:    owner,
@@ -17,7 +17,7 @@ func randomAccount(owner string) db.Account {
 	}
 }
 
-func randomUser(t *testing.T) (user db.User, password string) {
+func RandomUser(t *testing.T) (user db.User, password string) {
 	password = utils.RandomString(6)
 	hashedPassword, err := utils.HashPassword(password)
 	require.NoError(t, err)

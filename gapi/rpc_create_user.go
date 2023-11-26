@@ -22,6 +22,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	if violations != nil {
 		return nil, invalidArgumentError(violations)
 	}
+
 	hashedPassword, err := utils.HashPassword(req.GetPassword())
 
 	if err != nil {
