@@ -9,7 +9,6 @@ import (
 )
 
 func TestTransferTX(t *testing.T) {
-	store := NewStore(testDB)
 
 	account1, account2 := create2RandomAccounts(t)
 	fmt.Println(">> before: ", account1.Balance, account2.Balance)
@@ -24,7 +23,7 @@ func TestTransferTX(t *testing.T) {
 	for i := 0; i < n; i++ {
 		go func() {
 
-			result, err := store.TransferTX(context.Background(), TransferTXParams{
+			result, err := testStore.TransferTX(context.Background(), TransferTXParams{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
 				Amount:        amount,
@@ -52,7 +51,7 @@ func TestTransferTX(t *testing.T) {
 		require.NotZero(t, transfer.ID)
 		require.NotZero(t, transfer.CreatedAt)
 
-		_, err = store.GetTransfer(context.Background(), transfer.ID)
+		_, err = testStore.GetTransfer(context.Background(), transfer.ID)
 		require.NoError(t, err)
 
 		// check entries
@@ -63,7 +62,7 @@ func TestTransferTX(t *testing.T) {
 		require.NotZero(t, fromEntry.ID)
 		require.NotZero(t, fromEntry.CreatedAt)
 
-		_, err = store.GetEntry(context.Background(), fromEntry.ID)
+		_, err = testStore.GetEntry(context.Background(), fromEntry.ID)
 		require.NoError(t, err)
 
 		toEntry := result.ToEntry
@@ -73,7 +72,7 @@ func TestTransferTX(t *testing.T) {
 		require.NotZero(t, toEntry.ID)
 		require.NotZero(t, toEntry.CreatedAt)
 
-		_, err = store.GetEntry(context.Background(), toEntry.ID)
+		_, err = testStore.GetEntry(context.Background(), toEntry.ID)
 		require.NoError(t, err)
 
 		// check accounts
@@ -100,10 +99,10 @@ func TestTransferTX(t *testing.T) {
 		existed[k] = true
 	}
 
-	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	updatedAccount1, err := testStore.GetAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
-	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	updatedAccount2, err := testStore.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
 
 	fmt.Println(">> after: ", updatedAccount1.Balance, updatedAccount2.Balance)
@@ -112,7 +111,6 @@ func TestTransferTX(t *testing.T) {
 }
 
 func TestTransferTXDeadlock(t *testing.T) {
-	store := NewStore(testDB)
 
 	account1, account2 := create2RandomAccounts(t)
 	fmt.Println(">> before: ", account1.Balance, account2.Balance)
@@ -134,7 +132,7 @@ func TestTransferTXDeadlock(t *testing.T) {
 
 		go func() {
 
-			_, err := store.TransferTX(context.Background(), TransferTXParams{
+			_, err := testStore.TransferTX(context.Background(), TransferTXParams{
 				FromAccountID: fromAccountID,
 				ToAccountID:   toAccountID,
 				Amount:        amount,
@@ -149,10 +147,10 @@ func TestTransferTXDeadlock(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	updatedAccount1, err := testStore.GetAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
-	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	updatedAccount2, err := testStore.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
 
 	fmt.Println(">> after: ", updatedAccount1.Balance, updatedAccount2.Balance)

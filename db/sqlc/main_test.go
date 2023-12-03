@@ -1,32 +1,30 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 	"log"
 	"os"
 	"testing"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Use local postgres to run tests
 const (
-	dbDriver = "postgres"
 	dbSource = "postgres://root:secret@localhost:5432/small_bank?sslmode=disable"
 )
 
-var testQueries *Queries
-var testDB *sql.DB
+var testStore Store
 
 func TestMain(m *testing.M) {
 	var err error
-	testDB, err = sql.Open(dbDriver, dbSource)
+	connPool, err := pgxpool.New(context.Background(), dbSource)
 
 	if err != nil {
 		log.Fatal("Cannot connect to database: ", err)
 	}
 
-	testQueries = New(testDB)
+	testStore = NewStore(connPool)
 
 	os.Exit(m.Run())
 }

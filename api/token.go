@@ -1,11 +1,12 @@
 package api
 
 import (
-	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
+	db "github.com/giadat1599/small_bank/db/sqlc"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,9 +14,9 @@ type renewAccessTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
-type renewAccessTokenResponse struct {	
-	AccessToken string       `json:"access_token"`
-	AccessTokenExpiresAt        time.Time `json:"access_token_expires_at"`
+type renewAccessTokenResponse struct {
+	AccessToken          string    `json:"access_token"`
+	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
 }
 
 func (server *Server) renewAccessToken(ctx *gin.Context) {
@@ -35,7 +36,7 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 	session, err := server.store.GetSession(ctx, refreshPayload.ID)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
@@ -47,7 +48,7 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		err := fmt.Errorf("blocked session")
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
-	}	
+	}
 
 	if session.Username != refreshPayload.Username {
 		err := fmt.Errorf("incorrect session user")
@@ -67,15 +68,15 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	acessToken, accessPayload ,err := server.tokenMaker.CreateToken(refreshPayload.Username, server.config.AccessTokenLifeTime)
-		
+	acessToken, accessPayload, err := server.tokenMaker.CreateToken(refreshPayload.Username, server.config.AccessTokenLifeTime)
+
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, renewAccessTokenResponse{		
-		AccessToken: acessToken,
+	ctx.JSON(http.StatusOK, renewAccessTokenResponse{
+		AccessToken:          acessToken,
 		AccessTokenExpiresAt: accessPayload.ExpiredAt,
 	})
 }

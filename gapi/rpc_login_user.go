@@ -2,7 +2,7 @@ package gapi
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 
 	db "github.com/giadat1599/small_bank/db/sqlc"
 	"github.com/giadat1599/small_bank/pb"
@@ -23,7 +23,7 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 	user, err := server.store.GetUser(ctx, req.GetUsername())
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, db.ErrRecordNotFound) {
 			return nil, status.Errorf(codes.NotFound, "username not found: %s", err)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to find user: %s", err)
@@ -35,13 +35,13 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 		return nil, status.Errorf(codes.NotFound, "incorrect password: %s", err)
 	}
 
-	acessToken, accessPayload ,err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenLifeTime)
+	acessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenLifeTime)
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create token: %s", err)
 	}
 
-	refreshToken, refreshPayload , err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenLifeTime)
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenLifeTime)
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create refresh token: %s", err)
@@ -50,13 +50,13 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 	metadata := server.extractMetadata(ctx)
 
 	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
-		ID           : refreshPayload.ID,
-		Username     : user.Username,
-		RefreshToken : refreshToken,
-		UserAgent    : metadata.UserAgent,
-		ClientIp     : metadata.ClientIP,
-		IsBlocked    : false,
-		ExpiresAt    : refreshPayload.ExpiredAt,
+		ID:           refreshPayload.ID,
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    metadata.UserAgent,
+		ClientIp:     metadata.ClientIP,
+		IsBlocked:    false,
+		ExpiresAt:    refreshPayload.ExpiredAt,
 	})
 
 	if err != nil {
@@ -64,14 +64,14 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 	}
 
 	resp := &pb.LoginUserResponse{
-		User: convertUser(user),
-		SessionId: session.ID.String(),
-		AccessToken: acessToken,
-		RefreshToken: refreshToken,
-		AccessTokenExpiresAt: timestamppb.New(accessPayload.ExpiredAt),
+		User:                  convertUser(user),
+		SessionId:             session.ID.String(),
+		AccessToken:           acessToken,
+		RefreshToken:          refreshToken,
+		AccessTokenExpiresAt:  timestamppb.New(accessPayload.ExpiredAt),
 		RefreshTokenExpiresAt: timestamppb.New(refreshPayload.ExpiredAt),
 	}
-	return resp, nil 
+	return resp, nil
 }
 
 func validateLoginUserRequest(req *pb.LoginUserRequest) (violations []*errdetails.BadRequest_FieldViolation) {
